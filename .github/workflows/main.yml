@@ -24,18 +24,25 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.3.1'
+      - name: Remove Google Services plugin
+        run: |
+          find project -type f \( -name "*.gradle" -o -name "*.gradle.kts" \) -print0 | while IFS= read -r -d '' file; do
+            sed -i "/com\.google\.gms\.google-services/d" "$file"
+            sed -i "/com\.google\.gms\.google\.services/d" "$file"
+          done
 
       - name: Build APK
         working-directory: project
-        run: gradle assembleDebug --stacktrace
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew assembleDebug --stacktrace --no-daemon
+          else
+            gradle assembleDebug --stacktrace --no-daemon
+          fi
 
       - name: Find APK
         run: |
-          find project -name "*.apk" -type f
+          find project -name "*.apk" -type f -print
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
